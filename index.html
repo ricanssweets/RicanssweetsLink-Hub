@@ -6,6 +6,16 @@
 
   <title>Rican's Sweets by Fany</title>
 
+  <meta name="description" content="Rican's Sweets by Fany — Puerto Rican desserts made with love. Moist cakes, custom cakes & sweet treats in Port St. Lucie, Florida." />
+  <meta name="theme-color" content="#1d1208" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Rican's Sweets" />
+
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"/>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -136,6 +146,12 @@
       font-size: 25px;
     }
 
+    button.btn {
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
     .footer {
       margin-top: 30px;
       color: #d8c188;
@@ -222,6 +238,13 @@
       Facebook
     </a>
 
+    <button type="button" class="btn secondary-btn" id="installBtn" style="display:none">
+      <i class="fa-solid fa-download"></i>
+      <span id="installBtnText">Install app</span>
+    </button>
+
+    <p id="installHint" style="display:none; margin-top:4px; color:#d8c188; font-size:14px; line-height:1.6;">On iPhone: tap Share, then &ldquo;Add to Home Screen&rdquo;.</p>
+
     <div class="footer" id="footer">
       <span class="sparkle">✦</span>
       Homemade flavor. Elegant presentation. Boricua soul 🇵🇷
@@ -254,11 +277,58 @@
       document.getElementById("webText").innerHTML =
         spanish ? "Visitar Página Web" : "Visit Website";
 
+      document.getElementById("installBtnText").innerHTML =
+        spanish ? "Instalar app" : "Install app";
+
+      document.getElementById("installHint").innerHTML = spanish
+        ? `En iPhone: toca Compartir y luego &ldquo;A&ntilde;adir a pantalla de inicio&rdquo;.`
+        : `On iPhone: tap Share, then &ldquo;Add to Home Screen&rdquo;.` ;
+
       document.getElementById("footer").innerHTML = spanish
         ? `<span class="sparkle">✦</span>
            Sabor casero. Presentación elegante. Alma boricua 🇵🇷`
         : `<span class="sparkle">✦</span>
            Homemade flavor. Elegant presentation. Boricua soul 🇵🇷`;
+    }
+
+    // Install as app (PWA)
+    let deferredPrompt = null;
+    const installBtn = document.getElementById("installBtn");
+    const installHint = document.getElementById("installHint");
+    const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    const isStandalone = window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+
+    function showInstallBtn() {
+      if (!isStandalone) installBtn.style.display = "flex";
+    }
+
+    window.addEventListener("beforeinstallprompt", (event) => {
+      event.preventDefault();
+      deferredPrompt = event;
+      showInstallBtn();
+    });
+
+    if (isIOS) showInstallBtn();
+
+    installBtn.addEventListener("click", async () => {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        const choice = await deferredPrompt.userChoice;
+        deferredPrompt = null;
+        if (choice.outcome === "accepted") installBtn.style.display = "none";
+      } else if (isIOS) {
+        installHint.style.display = "block";
+      }
+    });
+
+    window.addEventListener("appinstalled", () => {
+      installBtn.style.display = "none";
+    });
+
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("sw.js").catch(() => {});
+      });
     }
   </script>
 
