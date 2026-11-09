@@ -238,7 +238,7 @@
       Facebook
     </a>
 
-    <button type="button" class="btn secondary-btn" id="installBtn" style="display:none">
+    <button type="button" class="btn secondary-btn" id="installBtn">
       <i class="fa-solid fa-download"></i>
       <span id="installBtnText">Install app</span>
     </button>
@@ -280,9 +280,7 @@
       document.getElementById("installBtnText").innerHTML =
         spanish ? "Instalar app" : "Install app";
 
-      document.getElementById("installHint").innerHTML = spanish
-        ? `En iPhone: toca Compartir y luego &ldquo;A&ntilde;adir a pantalla de inicio&rdquo;.`
-        : `On iPhone: tap Share, then &ldquo;Add to Home Screen&rdquo;.` ;
+      document.getElementById("installHint").innerHTML = installHintText();
 
       document.getElementById("footer").innerHTML = spanish
         ? `<span class="sparkle">✦</span>
@@ -292,37 +290,58 @@
     }
 
     // Install as app (PWA)
+    // The button is visible by default: Chrome does not always offer the
+    // install prompt on a first visit, so waiting for it hid the button.
     let deferredPrompt = null;
     const installBtn = document.getElementById("installBtn");
     const installHint = document.getElementById("installHint");
     const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    const isAndroid = /android/i.test(navigator.userAgent);
     const isStandalone = window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
 
-    function showInstallBtn() {
-      if (!isStandalone) installBtn.style.display = "flex";
+    if (isStandalone) installBtn.style.display = "none";
+
+    function installHintText() {
+      if (isIOS) {
+        return spanish
+          ? `En iPhone: toca Compartir y luego &ldquo;A&ntilde;adir a pantalla de inicio&rdquo;.`
+          : `On iPhone: tap Share, then &ldquo;Add to Home Screen&rdquo;.`;
+      }
+      if (isAndroid) {
+        return spanish
+          ? `En Chrome, toca el men&uacute; &#8942; y luego &laquo;Instalar app&raquo;.`
+          : `In Chrome, tap the &#8942; menu, then &laquo;Install app&raquo;.`;
+      }
+      return spanish
+        ? `En el men&uacute; de Chrome, elige &laquo;Instalar Rican's Sweets&hellip;&raquo;.`
+        : `In the Chrome menu, choose &laquo;Install Rican's Sweets&hellip;&raquo;.`;
     }
 
     window.addEventListener("beforeinstallprompt", (event) => {
       event.preventDefault();
       deferredPrompt = event;
-      showInstallBtn();
     });
-
-    if (isIOS) showInstallBtn();
 
     installBtn.addEventListener("click", async () => {
       if (deferredPrompt) {
         deferredPrompt.prompt();
         const choice = await deferredPrompt.userChoice;
         deferredPrompt = null;
-        if (choice.outcome === "accepted") installBtn.style.display = "none";
-      } else if (isIOS) {
+        if (choice.outcome === "accepted") {
+          installBtn.style.display = "none";
+        } else {
+          installHint.innerHTML = installHintText();
+          installHint.style.display = "block";
+        }
+      } else {
+        installHint.innerHTML = installHintText();
         installHint.style.display = "block";
       }
     });
 
     window.addEventListener("appinstalled", () => {
       installBtn.style.display = "none";
+      installHint.style.display = "none";
     });
 
     if ("serviceWorker" in navigator) {
